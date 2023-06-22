@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 load_dotenv()
 APP_ID = os.getenv("APP_ID")
 API_KEY = os.getenv("API_KEY")
+BEARER = os.getenv("BEARER")
 
 exercise_log = input("what exercises did you do + duration/distance?: ")
 
@@ -31,20 +32,19 @@ NU_data = NU_response.json()
 date = datetime.now().strftime("%d/%m/%Y")
 time = datetime.now().strftime("%X")
 
-# print(f"Time:{time.split('.', 1)[0]}")
-# print(f"Date:{date}")
-
 post_endpoint = "https://api.sheety.co/33cf7bb2149a15daeb8c642346c5e378/myWorkouts/workouts"
 
 header_sheety = {
-    'Content-Type': 'application/json'
+    'Content-Type': 'application/json',
+    "Authorization": f"Bearer {BEARER}"
 }
 
 for exercise in NU_data["exercises"]:
-    print(exercise)
+
     activity_name = exercise['name']
     duration = exercise['duration_min']
     calories = exercise['nf_calories']
+
     params = {
         "workout": {
             "date": date,
