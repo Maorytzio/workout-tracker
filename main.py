@@ -1,49 +1,45 @@
 import os
-from datetime import datetime
-import requests as requests
 from dotenv import load_dotenv
+from datetime import datetime
+import requests
 
 load_dotenv()
 APP_ID = os.getenv("APP_ID")
 API_KEY = os.getenv("API_KEY")
 BEARER = os.getenv("BEARER")
 
-exercise_log = input("what exercises did you do + duration/distance?: ")
 
-NU_endpoint = "https://trackapi.nutritionix.com/v2/natural/exercise/"
+def get_nutrition_info():
+    NU_endpoint = "https://trackapi.nutritionix.com/v2/natural/exercise/"
 
-headers = {
-    "x-app-id": APP_ID,
-    "x-app-key": API_KEY,
-    "x-remote-user-id": "0",
-}
-NU_params = {
+    headers = {
+        "x-app-id": APP_ID,
+        "x-app-key": API_KEY,
+        "x-remote-user-id": "0",
+    }
+    NU_params = {
+        "query": exercise_log,
+        "gender": "male",
+        "weight_kg": "72",
+        "height_cm": "175",
+        "age": "30",
+    }
+    return requests.post(url=NU_endpoint, json=NU_params, headers=headers).json()
 
-    "query": exercise_log,
-    "gender": "male",
-    "weight_kg": "72",
-    "height_cm": "175",
-    "age": "30",
-}
-NU_response = requests.post(url=NU_endpoint, json=NU_params, headers=headers)
 
-NU_data = NU_response.json()
+def send_data_to_sheet(workout):
+    sheety_post_endpoint = "https://api.sheety.co/33cf7bb2149a15daeb8c642346c5e378/myWorkouts/workouts"
 
-date = datetime.now().strftime("%d/%m/%Y")
-time = datetime.now().strftime("%X")
+    header_sheety = {
+        'Content-Type': 'application/json',
+        "Authorization": f"Bearer {BEARER}"
+    }
 
-post_endpoint = "https://api.sheety.co/33cf7bb2149a15daeb8c642346c5e378/myWorkouts/workouts"
-
-header_sheety = {
-    'Content-Type': 'application/json',
-    "Authorization": f"Bearer {BEARER}"
-}
-
-for exercise in NU_data["exercises"]:
-
-    activity_name = exercise['name']
-    duration = exercise['duration_min']
-    calories = exercise['nf_calories']
+    activity_name = workout['name']
+    duration = workout['duration_min']
+    calories = workout['nf_calories']
+    date = datetime.now().strftime("%d/%m/%Y")
+    time = datetime.now().strftime("%X")
 
     params = {
         "workout": {
@@ -55,6 +51,14 @@ for exercise in NU_data["exercises"]:
         }
     }
 
-    sheety_response = requests.post(url=post_endpoint, json=params, headers=header_sheety)
+    sheety_response = requests.post(url=sheety_post_endpoint, json=params, headers=header_sheety)
     sheety_response.raise_for_status()
-    print(f"POST RESULT: {sheety_response.text}")
+
+
+exercise_log = input("what exercises did you do + duration/distance?: ")
+
+NU_data = get_nutrition_info()
+exercises_data = NU_data["exercises"]
+
+for exercise in exercises_data:
+    send_data_to_sheet(exercise)
